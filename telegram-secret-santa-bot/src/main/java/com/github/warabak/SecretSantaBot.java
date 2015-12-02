@@ -22,8 +22,11 @@ public class SecretSantaBot {
 	// Max polling limit
 	private static final int MESSAGE_POLL_LIMIT = 100;
 
+	// Manager for message offsets
+	private MessageOffsetCounter offsetCounter = new MessageOffsetCounter();
+
 	private final TelegramBot bot;
-	private Integer messageUpdateOffset = null;
+	private final BotCommandFactory botCommandFactory;
 
 	public static void main(String[] args) {
 		if (args == null || args.length != 1) {
@@ -37,11 +40,14 @@ public class SecretSantaBot {
 
 	public SecretSantaBot(final String botToken) {
 		this.bot = TelegramBotAdapter.build(botToken);
+		this.botCommandFactory = new BotCommandFactory(bot.getMe().user().id());
 	}
 
 	public void run(final long pollDelay, final int messagePollLimit) {
 		LOGGER.info("Secret Santa Bot is online!");
 
+		clearMessageQueue();
+		
 		while (true) {
 			try {
 				Thread.sleep(pollDelay);
@@ -55,32 +61,35 @@ public class SecretSantaBot {
 		}
 	}
 
+	private void clearMessageQueue() {
+		List<Update> updates = pollForMessages();
+		
+		while(updates.size() > 0) {
+			offsetCounter.increment(updates.get(updates.size() - 1).updateId());
+			updates = pollForMessages();
+		}
+	}
+
 	private List<Update> pollForMessages() {
-		return bot.getUpdates(messageUpdateOffset, null, null).updates();
+		return bot.getUpdates(offsetCounter.offset, null, null).updates();
 	}
 
 	private void processMessage(Update update) {
-		// Initialize offset (one-time only)
-		if (messageUpdateOffset == null) {
-			messageUpdateOffset = update.updateId();
-		}
-
 		LOGGER.info("Attempting to process message [{}] : From {} {} - {}", 
 				update.updateId(),
 				update.message().from().firstName(), 
 				update.message().from().lastName(), 
 				update.message().text());
 
-		final String msg = String.format("I'm still being developed, %s", update.message().from().lastName());
-
+		LOGGER.debug(update.toString());
+		
 		try {
-			bot.sendMessage(update.message().chat().id(), msg);
+			botCommandFactory.create(update).execute(bot, update.message().chat().id());
 		} catch (RetrofitError e) {
 			LOGGER.error("Error sending message", e);
 		} finally {
-			// Currently no way to recover. Update offset and continue.
-			messageUpdateOffset++;
+			// Currently no way to recover errors. Update offset and continue.
+			offsetCounter.increment(update.updateId());
 		}
 	}
-	
 }
