@@ -1,20 +1,22 @@
 package com.github.warabak;
 
+import static org.junit.Assert.*;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.github.warabak.BotCommandEnum.HelpCommand;
-import com.github.warabak.BotCommandEnum.UnknownCommand;
+import com.github.warabak.BotCommandEnum2.HelpCommand;
+import com.github.warabak.BotCommandEnum2.UnknownCommand;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.User;
 
 @RunWith(MockitoJUnitRunner.class)
-public class BotCommandFactoryTest {
+public class SecretSantaBotTest {
 	
 	private static final Integer DUMMY_BOT_ID = 1;
 	private static final Long DUMMY_CHAT_ID = 123l;
@@ -98,5 +100,10 @@ public class BotCommandFactoryTest {
 		
 		underTest.create(update).execute(bot, DUMMY_CHAT_ID);
 		Mockito.verify(bot).sendMessage(DUMMY_CHAT_ID, UnknownCommand.UNKNOWN_MESSAGE);
+	}
+	
+	@Test
+	public void testCreateGroup() throws Exception {
+		
 	}
 }
